@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+marketing_data/
+faiss_uplift_index/
+embedding_cache/
+.DS_Store
