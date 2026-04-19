@@ -2,25 +2,20 @@ import os
 from src.config import settings
 from src.embeddings import QwenEmbeddings
 
-# ========================
-# LangChain 1.0+ 正确导入
-# ========================
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
-from langchain_community.storage import LocalFileStore
-from langchain_community.embeddings.cache import CacheBackedEmbeddings
-from langchain.retrievers.ensemble import EnsembleRetriever
-from langchain_community.retrievers import BM25Retriever
+
+# ==============================================
+# ✅ 官方1.x标准导入（langchain 1.2.15 完美适配）
+# ==============================================
+from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_community.document_compressors import DashScopeRerank
+
 
 class UpliftRAGService:
     def __init__(self):
-        self.base_embed = QwenEmbeddings()
-        self.store = LocalFileStore(settings.EMBEDDING_CACHE_DIR)
-        self.embeddings = CacheBackedEmbeddings.from_bytes_store(
-            self.base_embed, self.store, namespace=settings.QWEN_EMBEDDING_MODEL
-        )
+        self.embeddings = QwenEmbeddings()
 
         if os.path.exists(settings.FAISS_INDEX_PATH):
             self.vs = FAISS.load_local(
@@ -53,21 +48,19 @@ class UpliftRAGService:
         return vs
 
     def _build_retriever(self):
-        bm25 = BM25Retriever.from_documents(self.vs.docstore._dict.values())
-        bm25.k = 10
-        vec_ret = self.vs.as_retriever(k=10)
+        base_retriever = self.vs.as_retriever(search_kwargs={"k": 20})
 
-        self.ensemble = EnsembleRetriever(
-            retrievers=[vec_ret, bm25],
-            weights=[0.7, 0.3]
-        )
-        self.rerank = DashScopeRerank(
+        rerank = DashScopeRerank(
             model="gte-rerank",
-            top_n=3,
-            api_key=settings.QWEN_API_KEY
+            top_n=5,
+            dashscope_api_key=settings.QWEN_API_KEY
+        )
+
+        self.retriever = ContextualCompressionRetriever(
+            base_retriever=base_retriever,
+            base_compressor=rerank
         )
 
     def retrieve(self, query: str):
-        docs = self.ensemble.invoke(query)
-        compressed = self.rerank.compress_documents(docs, query)
-        return [d.page_content for d in compressed]
+        docs = self.retriever.invoke(query)
+        return [d.page_content for d in docs]

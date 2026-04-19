@@ -1,9 +1,31 @@
-.env
+# 1. 📂 项目生成的数据文件夹（核心！）
+/data/
+/faiss_index/
+/knowledge_base/
+vectorstore/
+
+# 2. 🐍 Python 编译文件
 __pycache__/
-*.pyc
-marketing_data/
-faiss_uplift_index/
-embedding_cache/
-.DS_Store
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# 3. 🔒 配置密钥（绝对不能提交！）
+.env
+.env.local
+.env.prod
+
+# 4. 🧩 IDE 配置
 .idea/
-*.iml
+.vscode/
+*.swp
+*.sublime-project
+
+# 5. 📝 日志、缓存
+logs/
+*.log
+.DS_Store
