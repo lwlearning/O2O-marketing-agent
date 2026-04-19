@@ -1,7 +1,7 @@
 import dashscope
 from dashscope import TextEmbedding
 from typing import List
-from src.config import settings
+from src.core.config import settings
 from langchain_core.embeddings import Embeddings
 
 class QwenEmbeddings(Embeddings):
